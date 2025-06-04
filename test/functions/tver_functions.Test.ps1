@@ -6,12 +6,15 @@ Import-Module Pester -MinimumVersion 5.0
 # テスト対象ファイルの読み込み
 #----------------------------------------------------------------------
 BeforeAll {
-	Write-Host ('テストスクリプト: {0}' -f $PSCommandPath)
-	$targetFile = $PSCommandPath.Replace('test', 'src').Replace('.Test.ps1', '.ps1')
+        Write-Host ('テストスクリプト: {0}' -f $PSCommandPath)
+        $targetFile = $PSCommandPath.Replace('test', 'src').Replace('.Test.ps1', '.ps1')
 	Write-Host ('　テスト対象: {0}' -f $targetFile)
 	$script:scriptRoot = Convert-Path ./src
 	Set-Location $script:scriptRoot
-	$script:disableToastNotification = $false
+        $script:disableToastNotification = $false
+        # 一部の関数ではグローバル変数が参照されるため、テスト用に最低限の値を設定する
+        $script:jpIP = '127.0.0.1'
+        $script:msg  = @{ TokenRetrievalFailed = 'TokenRetrievalFailed'; FileNotFound='File not found: {0}' }
 	. ($targetFile).Replace('tver', 'common')
 	function Invoke-StatisticsCheck {}
 	. $targetFile

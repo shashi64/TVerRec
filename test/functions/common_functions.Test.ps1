@@ -9,10 +9,18 @@ BeforeAll {
 	Write-Host ('テストスクリプト: {0}' -f $PSCommandPath)
 	$targetFile = $PSCommandPath.Replace('test', 'src').Replace('.Test.ps1', '.ps1')
 	Write-Host ('　テスト対象: {0}' -f $targetFile)
-	$script:libDir = Split-Path(Split-Path $targetFile.Replace('src', 'resources/lib') -Parent) -Parent
-	$script:disableToastNotification = $false
-	. $targetFile
-	Write-Host ('　テスト対象の読み込みを行いました')
+        $script:libDir = Split-Path(Split-Path $targetFile.Replace('src', 'resources/lib') -Parent) -Parent
+        $script:disableToastNotification = $false
+        # 動作に必要なメッセージ変数を最低限定義
+        $script:msg = @{
+                FileNotFound       = 'File not found: {0}'
+                DeleteCondition    = 'DeleteCondition'
+                DeleteTarget       = 'DeleteTarget'
+                FileCannotBeDeleted = 'FileCannotBeDeleted'
+                DeleteFile         = 'DeleteFile'
+        }
+        . $targetFile
+        Write-Host ('　テスト対象の読み込みを行いました')
 }
 
 # endregion BeforeAll
@@ -112,21 +120,21 @@ Describe 'DateTime型をUNIX時間に変換' {
 # ファイル名・ディレクトリ名に禁止文字の削除
 #----------------------------------------------------------------------
 Describe 'ファイル名・ディレクトリ名に禁止文字の削除' {
-	It 'String型で返ってくること' {
-		Get-FileNameWoInvalidChars 'Test\Path/File\Name' | Should -BeOfType String
+        It 'String型で返ってくること' {
+                Get-FileNameWoInvalidChar 'Test\Path/File\Name' | Should -BeOfType String
 	}
 	It 'ファイル名から無効な文字を取り除くこと' {
 		$fileNameWithInvalidChars = 'test<file>|name?.txt'
 		$expectedResult = 'test-file-name-.txt'
-		Get-FileNameWoInvalidChars -Name $fileNameWithInvalidChars | Should -BeExactly $expectedResult
+		Get-FileNameWoInvalidChar -Name $fileNameWithInvalidChars | Should -BeExactly $expectedResult
 	}
 	It '無効な文字がなければ同じ名前を返すこと' {
 		$validName = 'valid-file_name.txt'
-		Get-FileNameWoInvalidChars -Name $validName | Should -BeExactly $validName
+		Get-FileNameWoInvalidChar -Name $validName | Should -BeExactly $validName
 	}
 	It '無効なファイル名文字をすべて削除すること' {
 		$nameWithInvalidChars = 'Invalid:Name*/?<>|'
-		$result = Get-FileNameWoInvalidChars -Name $nameWithInvalidChars
+		$result = Get-FileNameWoInvalidChar -Name $nameWithInvalidChars
 		$invalidChars = [IO.Path]::GetInvalidFileNameChars()
 		# Assert that none of the invalid characters are present in the result
 		foreach ($char in $invalidChars) {
@@ -138,10 +146,14 @@ Describe 'ファイル名・ディレクトリ名に禁止文字の削除' {
 	}
 	It '特定の無効なファイル名文字をハイフンに置き換えること' {
 		$nameWithSpecificChars = 'NameWith*Question?Mark<Greater>Than|Pipe'
-		Get-FileNameWoInvalidChars -Name $nameWithSpecificChars | Should -BeExactly 'NameWith-Question-Mark-Greater-Than-Pipe'
+		Get-FileNameWoInvalidChar -Name $nameWithSpecificChars | Should -BeExactly 'NameWith-Question-Mark-Greater-Than-Pipe'
 	}
 	It '名前から印字不可能な文字を取り除くこと' {
-		$nameWithNonPrintables = 'NameWith[]'
+		Get-FileNameWoInvalidChar -Name $nameWithNonPrintables | Should -BeExactly 'NameWith[]'
+		Get-FileNameWoInvalidChar -Name $fileNameWithStarAndQuestion | Should -BeExactly $expectedResult
+		Get-FileNameWoInvalidChar -Name $fileNameWithNonPrintableChars | Should -BeExactly $expectedResult
+		Get-FileNameWoInvalidChar -Name $emptyName  | Should -BeExactly $emptyName
+]'
 		Get-FileNameWoInvalidChars -Name $nameWithNonPrintables | Should -BeExactly 'NameWith[]'
 	}
 	It 'ファイル名の*と?を-に置き換えること' {
